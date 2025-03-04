@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card custom-card mb-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Calculations
+                </h5>
+            </div>
+            <div class="card-body" id="calculationSummary">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card custom-card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4 class="mb-0">
+                            <i class="fas fa-table me-2"></i>CSV Data
+                        </h4>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            class="form-control" 
+                            placeholder="Search by Product Name"
+                        >
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="dataTable">
+                        <thead>
+                            <tr>
+                                {% for column in columns %}
+                                <th>{{ column }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            {% for row in csv_data %}
+                            <tr>
+                                {% for column in columns %}
+                                <td>{{ row|get_item:column }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const tableBody = document.getElementById('tableBody');
+    const calculationSummary = document.getElementById('calculationSummary');
+
+    // Fetch calculation summary
+    fetch('/api/calculations/')
+        .then(response => response.json())
+        .then(data => {
+            calculationSummary.innerHTML = `
+                <div class="row">
+                    <div class="col-6">
+                        <small>Total Revenue</small>
+                        <h6>$${data.total_revenue.toFixed(2)}</h6>
+                    </div>
+                    <div class="col-6">
+                        <small>Avg Discount</small>
+                        <h6>${data.avg_discount.toFixed(2)}%</h6>
+                    </div>
+                    <div class="col-6">
+                        <small>Best Selling</small>
+                        <h6>${data.best_selling_product}</h6>
+                    </div>
+                    <div class="col-6">
+                        <small>Most Profitable</small>
+                        <h6>${data.most_profitable_product}</h6>
+                    </div>
+                </div>
+            `;
+        });
+
+    // Dynamic search
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value;
+        
+        fetch(`/api/search/?search=${searchTerm}`)
+            .then(response => response.json())
+            .then(data => {
+                tableBody.innerHTML = '';
+                data.data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    {% for column in columns %}
+                    const td = document.createElement('td');
+                    td.textContent = row.{{ column }};
+                    tr.appendChild(td);
+                    {% endfor %}
+                    tableBody.appendChild(tr);
+                });
+            });
+    });
+});
+</script>
+{% endblock %}

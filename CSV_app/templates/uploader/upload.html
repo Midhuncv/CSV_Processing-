@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card custom-card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-upload me-2"></i>Upload CSV File
+                </h4>
+            </div>
+            <div class="card-body">
+                <form id="csvUploadForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="csvFile" class="form-label">Choose CSV File</label>
+                        <input 
+                            type="file" 
+                            class="form-control" 
+                            id="csvFile" 
+                            name="file" 
+                            accept=".csv"
+                            required
+                        >
+                        <small class="text-muted">Maximum file size: 50MB</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-cloud-upload-alt me-2"></i>Upload
+                    </button>
+                </form>
+
+                <div id="uploadProgress" class="mt-3" style="display:none;">
+                    <div class="progress progress-custom">
+                        <div 
+                            class="progress-bar progress-bar-striped progress-bar-animated" 
+                            role="progressbar" 
+                            style="width: 0%"
+                        ></div>
+                    </div>
+                    <small id="uploadStatus" class="text-muted"></small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card custom-card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Uploads</h5>
+            </div>
+            <div class="card-body">
+                <div id="recentUploads">
+                    <!-- Recent uploads will be dynamically populated -->
+                    <p class="text-muted">No recent uploads</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('csvUploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    // Show progress
+    document.getElementById('uploadProgress').style.display = 'block';
+    const progressBar = document.querySelector('.progress-bar');
+    const uploadStatus = document.getElementById('uploadStatus');
+    
+    fetch('/api/upload/', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        progressBar.style.width = '100%';
+        uploadStatus.textContent = 'Upload Complete! Processing file...';
+        
+        // Redirect to results after processing
+        setTimeout(() => {
+            window.location.href = '/results/';
+        }, 2000);
+    })
+    .catch(error => {
+        uploadStatus.textContent = 'Upload failed. Please try again.';
+        console.error('Error:', error);
+    });
+});
+</script>
+{% endblock %}
